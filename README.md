@@ -1,3 +1,12 @@
+# Fork details
+
+This is a temporary workaround to support apollo devtools with `@apollo/client 3.0.0-beta.40`+
+To use this, follow the original instructions for setting up a local build of the devtools.
+
+Related commits:
+https://github.com/apollographql/apollo-client/commit/24a068dbd908044dd7642dfd704b447e976b371b
+https://github.com/apollographql/apollo-client/commit/41e57d1cc3f4cbebbe24077fa2c0757989f375a1#diff-f28988ac35502178bef737788c3d4cd5R509
+
 # Apollo Client Devtools
 
 [Download for Chrome](https://chrome.google.com/webstore/detail/apollo-client-developer-t/jdkknkkbebbapilgoeccciglkfbmbnfm) | (Download for Firefox temporarily disabled, it was removed from the Firefox store until the usage of `eval` is removed)

@@ -1,3 +1,31 @@
+function stringify(obj, replacer, spaces, cycleReplacer) {
+  return JSON.stringify(obj, serializer(replacer, cycleReplacer), spaces);
+}
+
+function serializer(replacer, cycleReplacer) {
+  var stack = [],
+    keys = [];
+
+  if (cycleReplacer == null)
+    cycleReplacer = function(key, value) {
+      if (stack[0] === value) return "[Circular ~]";
+      return (
+        "[Circular ~." + keys.slice(0, stack.indexOf(value)).join(".") + "]"
+      );
+    };
+
+  return function(key, value) {
+    if (stack.length > 0) {
+      var thisPos = stack.indexOf(this);
+      ~thisPos ? stack.splice(thisPos + 1) : stack.push(this);
+      ~thisPos ? keys.splice(thisPos, Infinity, key) : keys.push(key);
+      if (~stack.indexOf(value)) value = cycleReplacer.call(this, key, value);
+    } else stack.push(value);
+
+    return replacer == null ? value : replacer.call(this, key, value);
+  };
+}
+
 export const initBroadCastEvents = (hook, bridge) => {
   // Counters for diagnostics
   let counter = 0;
@@ -19,7 +47,7 @@ export const initBroadCastEvents = (hook, bridge) => {
 
   // Send the Apollo broadcast to the devtools
   function sendBroadcast() {
-    const msg = JSON.stringify(enqueued);
+    const msg = stringify(enqueued);
     bridge.send("broadcast:new", msg);
     enqueued = null;
 
@@ -38,10 +66,14 @@ export const initBroadCastEvents = (hook, bridge) => {
     state: { queries, mutations },
     dataWithOptimisticResults: inspector,
   }) => {
+    const client = hook.ApolloClient;
+
     counter++;
     enqueued = {
       counter,
-      queries,
+      queries: JSON.parse(
+        stringify(Object.fromEntries(client.queryManager.queries)),
+      ),
       mutations,
       inspector,
     };
@@ -62,14 +94,14 @@ export const initBroadCastEvents = (hook, bridge) => {
     const client = hook.ApolloClient;
     const initial = {
       queries: client.queryManager
-        ? client.queryManager.queryStore.getStore()
+        ? JSON.parse(stringify(Object.fromEntries(client.queryManager.queries)))
         : {},
       mutations: client.queryManager
         ? client.queryManager.mutationStore.getStore()
         : {},
       inspector: client.cache.extract(true),
     };
-    bridge.send("broadcast:new", JSON.stringify(initial));
+    bridge.send("broadcast:new", stringify(initial));
   });
 
   hook.ApolloClient.__actionHookForDevTools(logger);
